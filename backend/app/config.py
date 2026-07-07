@@ -1,0 +1,67 @@
+from pathlib import Path
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Anchor the .env path to the project root (parent of app/) so settings load
+# regardless of the current working directory pytest/uvicorn is launched from.
+_ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
+
+_base_config = SettingsConfigDict(
+    env_file=_ENV_FILE, env_ignore_empty=True, extra="ignore"
+)
+
+
+class AppSettings(BaseSettings):
+    APP_NAME: str = "FastShip"
+    APP_DOMAIN: str = "localhost:8000"
+
+
+class DatabaseSettings(BaseSettings):
+    POSTGRES_SERVER: str
+    POSTGRES_PORT: int
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_DB: str
+
+    REDIS_HOST: str
+    REDIS_PORT: int
+
+    model_config = _base_config
+
+    @property
+    def POSTGRES_URL(self):
+        return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+
+    def REDIS_URL(self, db):
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{db}"
+
+
+class SecuritySettings(BaseSettings):
+    JWT_SECRET: str
+    JWT_ALGORITHM: str
+
+    model_config = _base_config
+
+
+class NotificationSettings(BaseSettings):
+    model_config = _base_config
+    MAIL_USERNAME: str
+    MAIL_PASSWORD: str
+    MAIL_FROM: str
+    MAIL_FROM_NAME: str
+    MAIL_SERVER: str
+    MAIL_PORT: int
+    MAIL_STARTTLS: bool = True
+    MAIL_SSL_TLS: bool = False
+    USE_CREDENTIALS: bool = True
+    VALIDATE_CERTS: bool = True
+
+    TWILIO_SID: str
+    TWILIO_AUTH_TOKEN: str
+    TWILIO_NUMBER: str
+
+
+app_settings = AppSettings()
+settings = DatabaseSettings()
+security_settings = SecuritySettings()
+notification_settings = NotificationSettings()

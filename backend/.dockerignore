@@ -1,0 +1,12 @@
+.git
+.venv
+__pycache__/
+*.py[oc]
+.mypy_cache
+.pytest_cache
+.vscode
+.claude
+dump.rdb
+Dockerfile
+.dockerignore
+README.md
