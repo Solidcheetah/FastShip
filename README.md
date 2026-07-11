@@ -154,16 +154,35 @@ npm run dev               # http://localhost:5173
 
 The frontend talks to the API at `http://localhost:8000` (see [`frontend/app/lib/api.ts`](frontend/app/lib/api.ts)). The backend's CORS is configured to allow `http://localhost:5173`.
 
-## 3. Docker (Postgres + API)
+## 3. Docker (full stack)
 
-A Compose file in `backend/` builds the API and a Postgres instance:
+The easiest way to run everything is the root [`compose.yaml`](compose.yaml), which builds and starts all five services — **frontend, API, Celery worker, Postgres, and Redis** — from a single command.
 
 ```bash
-cd backend
+# Secrets are still read from backend/.env at runtime
+cp backend/.env.example backend/.env    # then fill in JWT, mail, Twilio secrets
+
+# From the repo root
 docker compose up --build
 ```
 
-> **Note:** the Compose file covers the API and Postgres. For notifications you'll also need Redis and the Celery worker running (start Redis locally or add a `redis` service to `compose.yaml`).
+Once it's up:
+
+| Service | URL |
+| --- | --- |
+| Frontend | http://localhost:3000 |
+| API docs | http://localhost:8000/docs |
+
+Run detached with `-d`, and stop the stack with `docker compose down`.
+
+**How it fits together:**
+
+- `api` and `celery` build from [`backend/`](backend/); `frontend` builds from [`frontend/`](frontend/); `db` (Postgres) and `redis` are pulled from Docker Hub.
+- Compose sets the in-network DB/broker vars (`POSTGRES_SERVER=db`, `REDIS_HOST=redis`, …), which take precedence over `backend/.env`. Secrets (JWT, mail, Twilio) still come from `backend/.env`.
+- Postgres and Redis persist to `backend/postgres_data/` and `backend/redis_data/` (git-ignored).
+- The browser calls the API at `http://localhost:8000` (the host-exposed port), so no in-container wiring is needed for the frontend.
+
+> **Migrations:** the API image doesn't run Alembic automatically. Apply migrations once the DB is up with `docker compose run --rm api alembic upgrade head`.
 
 ## Running tests
 
