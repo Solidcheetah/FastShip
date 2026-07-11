@@ -1,0 +1,63 @@
+x-app-env: &app-env
+  # Point the app at the in-network service names and the compose-managed
+  # Postgres credentials. These real env vars take priority over the values in
+  # the runtime-mounted .env (pydantic-settings precedence), so compose is the
+  # single source of truth for the containerized DB/broker connection.
+  POSTGRES_SERVER: db
+  POSTGRES_PORT: 5432
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: strong
+  POSTGRES_DB: fastship
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+
+services:
+  api:
+    build: ./backend
+    # Secrets (JWT, mail, Twilio) are read from .env at runtime rather than
+    # baked into the image; .env is in .dockerignore.
+    env_file: ./backend/.env
+    environment: *app-env
+    expose:
+      - 8000
+    command: ["fastapi", "run", "app/main.py", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+      - celery
+  db:
+    image: postgres:15.18-trixie
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "strong"
+      POSTGRES_DB: "fastship"
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./backend/postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:trixie
+    command: redis-server --appendonly yes
+    volumes:
+      - ./backend/redis_data:/data
+
+  celery:
+    build: ./backend
+    env_file: ./backend/.env
+    environment: *app-env
+    command: ["celery", "-A", "app.worker.tasks", "worker", "--loglevel=info"]
+    depends_on:
+      - redis
+
+  frontend:
+    build: ./frontend
+    # react-router-serve listens on 3000. The browser talks to the API on the
+    # host-exposed port (http://localhost:8000), so no in-network wiring is
+    # needed here.
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api

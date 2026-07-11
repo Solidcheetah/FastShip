@@ -1,12 +1,14 @@
 FROM node:24-alpine AS development-dependencies-env
 COPY . /app
 WORKDIR /app
-RUN npm ci
+# --legacy-peer-deps: react-qr-reader@3.0.0-beta-1 pins React 16/17 as a peer,
+# which conflicts with this project's React 19.
+RUN npm ci --legacy-peer-deps
 
 FROM node:24-alpine AS production-dependencies-env
 COPY ./package.json package-lock.json /app/
 WORKDIR /app
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev --legacy-peer-deps
 
 FROM node:24-alpine AS build-env
 COPY . /app/

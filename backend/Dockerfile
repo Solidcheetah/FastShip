@@ -8,8 +8,10 @@ COPY pyproject.toml uv.lock ./
 
 RUN uv sync --locked --no-cache
 
+ENV PATH="/app/.venv/bin:$PATH"
+
 COPY . .
 
-ENTRYPOINT ["uv", "run", "fastapi", "run", "app/main.py", "--port", "8000"]
+
 
 

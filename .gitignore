@@ -41,6 +41,10 @@ coverage.xml
 # Redis
 dump.rdb
 
+# Container runtime data (Postgres / Redis volumes)
+postgres_data/
+redis_data/
+
 # ═══ Frontend (React Router / Vite) ═══
 node_modules/
 .react-router/

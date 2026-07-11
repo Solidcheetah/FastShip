@@ -10,3 +10,6 @@ dump.rdb
 Dockerfile
 .dockerignore
 README.md
+.env
+postgres_data/
+redis_data/
